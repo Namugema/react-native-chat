@@ -3,8 +3,23 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Avatar } from 'react-native-elements';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { collection, addDoc, getDocs, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, onSnapshot, setDoc, doc, where } from 'firebase/firestore';
 import { GiftedChat } from 'react-native-gifted-chat';
+
+const userGroup = 'andreas@gmail.com,flav@gmail.com'
+
+function updateChatlist({_id, userGroup, user, createdAt, text}){
+
+    setDoc(doc(db,'chatList', userGroup), {
+        _id: _id,
+        createdAt: createdAt,
+        text: text,
+        user: user,
+        users: [auth?.currentUser?.email, "flav@gmail.com"]
+      })
+
+      return null;
+}
 
 const Chat = ({ navigation }) => {
     const [messages, setMessages] = useState([]);
@@ -39,7 +54,7 @@ const Chat = ({ navigation }) => {
             )
         })
 
-        const q = query(collection(db, 'chats'), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, 'chats'), where('userGroup', '==', userGroup),orderBy('createdAt', 'desc'));
         const unsubscribe = onSnapshot(q, (snapshot) => setMessages(
             snapshot.docs.map(doc => ({
                 _id: doc.data()._id,
@@ -58,7 +73,9 @@ const Chat = ({ navigation }) => {
     const onSend = useCallback((messages = []) => {
         const { _id, createdAt, text, user,} = messages[0]
 
-        addDoc(collection(db, 'chats'), { _id, createdAt,  text, user });
+        addDoc(collection(db, 'chats'), { _id, userGroup, createdAt,  text, user });
+
+        updateChatlist({_id, userGroup, user, createdAt, text})
     }, []);
 
     return (
